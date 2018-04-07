@@ -1,0 +1,14 @@
+target/
+classes/
+checkouts/
+.idea/
+resources/public/js/
+pom.xml
+pom.xml.asc
+*.iml
+*.jar
+*.class
+.lein-*
+.nrepl-port
+.hgignore
+.hg/
