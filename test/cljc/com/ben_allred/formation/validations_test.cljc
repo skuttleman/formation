@@ -92,7 +92,7 @@
           gte (spies/create >=)
           v (v/make-optional {:key-1 [[integer?] [gte 12] #(when-not (:key-1 %)
                                                              ["this only happens when not :key-1"])]
-                              :key-2 ^:required [^"a uuid" [uuid?]]
+                              :key-2 ^:required ^"key-2 is required" [^"a uuid" [uuid?]]
                               :key-3 {:sub-key-1 ^:required [[string?]
                                                              ^"length between 8 and 16" [#(<= 8 (count %) 16)]]
                                       :sub-key-2 [^{:tag ["should be a keyword" "any keyword"]} [keyword?]]
@@ -154,12 +154,12 @@
       (testing "when passed partially invalid data"
         (let [result (v (assoc data :key-1 false :key-2 nil))]
           (testing "only returns errors for incorrect data"
-            (is (= {:key-1 ["invalid" "this only happens when not :key-1"] :key-2 ["required"]}
+            (is (= {:key-1 ["invalid" "this only happens when not :key-1"] :key-2 ["key-2 is required"]}
                    result)))))
 
       (testing "when passed nil"
         (testing "only returns errors for required data"
-          (is (= {:key-2 ["required"] :key-3 {:sub-key-1 ["required"]}}
+          (is (= {:key-2 ["key-2 is required"] :key-3 {:sub-key-1 ["required"]}}
                  (v nil))))))))
 
 (deftest make-required-test
@@ -174,7 +174,7 @@
           gte (spies/create >=)
           v (v/make-required {:key-1 ^:optional [[integer?] [gte 12] #(when-not (:key-1 %)
                                                                         ["this only happens when not :key-1"])]
-                              :key-2 [^"a uuid" [uuid?]]
+                              :key-2 ^"key-2 is required" [^"a uuid" [uuid?]]
                               :key-3 {:sub-key-1 [[string?] ^"length between 8 and 16" [#(<= 8 (count %) 16)]]
                                       :sub-key-2 ^:optional [^{:tag ["should be a keyword" "any keyword"]} [keyword?]]
                                       :sub-key-3 {:sub-sub ^:optional [map-of-k->s-vectors?]}}})
@@ -235,10 +235,10 @@
       (testing "when passed partially invalid data"
         (let [result (v (assoc data :key-1 false :key-2 nil))]
           (testing "only returns errors for incorrect data"
-            (is (= {:key-1 ["invalid" "this only happens when not :key-1"] :key-2 ["required"]}
+            (is (= {:key-1 ["invalid" "this only happens when not :key-1"] :key-2 ["key-2 is required"]}
                    result)))))
 
       (testing "when passed nil"
         (testing "only returns errors for required data"
-          (is (= {:key-2 ["required"] :key-3 {:sub-key-1 ["required"]}}
+          (is (= {:key-2 ["key-2 is required"] :key-3 {:sub-key-1 ["required"]}}
                  (v nil))))))))

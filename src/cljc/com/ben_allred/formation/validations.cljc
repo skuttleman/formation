@@ -1,5 +1,10 @@
 (ns com.ben-allred.formation.validations)
 
+(defmacro ^:private silent [form & [else]]
+  `(try ~form
+        (catch #?(:clj Throwable :cljs js/Object) _#
+          ~else)))
+
 (defn ^:private deep-into [val-1 val-2]
   (if (or (map? val-1) (map? val-2))
     (merge-with deep-into val-1 val-2)
@@ -21,33 +26,31 @@
   (when (seq msgs)
     (assoc-in {} path msgs)))
 
+(defn ^:private force-coll [val-or-coll]
+  (if (coll? val-or-coll) val-or-coll [val-or-coll]))
+
 (defmulti ^:private ->pvalidator fn?)
 
 (defmethod ^:private ->pvalidator true
   [validator]
   (fn [path m]
-    (->> (try (validator m)
-              (catch #?(:clj Throwable :cljs js/Object) _
-                ["error"]))
+    (->> (silent (validator m) ["error"])
          (assoc-msgs path))))
 
 (defmethod ^:private ->pvalidator false
   [v]
-  (let [msg (or (:tag (meta v)) "invalid")
-        msgs (if (coll? msg) msg [msg])
+  (let [msgs (force-coll (or (:tag (meta v)) "invalid"))
         [pred & args] v]
     (fn [path m]
-      (let [ok? (try (apply pred (get-in m path) args)
-                     (catch #?(:clj Throwable :cljs js/Object) _
-                       false))]
-        (when-not ok?
-          (assoc-msgs path msgs))))))
+      (when-not (silent (apply pred (get-in m path) args))
+        (assoc-msgs path msgs)))))
 
-(defn ^:private wrap-required [pvalidator required?]
+(defn ^:private wrap-required [pvalidator {:keys [required tag]}]
   (fn [path m]
-    (let [value (get-in m path)]
-      (if (and required? (nil? value))
-        (assoc-msgs path ["required"])
+    (let [value (get-in m path)
+          msgs (force-coll (or tag "required"))]
+      (if (and required (nil? value))
+        (assoc-msgs path msgs)
         (when (some? value)
           (pvalidator path m))))))
 
@@ -72,7 +75,7 @@
                 (if (map? v)
                   (make* path' v)
                   (-> (apply pcombine (map ->pvalidator v))
-                      (wrap-required (:required (meta v)))
+                      (wrap-required (meta v))
                       (partial path'))))))
        (apply combine)))
 
