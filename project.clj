@@ -9,7 +9,8 @@
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/core.async "0.3.465"]]
   :plugins [[lein-cljsbuild "1.1.6"]
-            [com.jakemccrary/lein-test-refresh "0.22.0"]]
+            [com.jakemccrary/lein-test-refresh "0.22.0"]
+            [cider/cider-nrepl "0.16.0"]]
   :hooks [leiningen.cljsbuild]
   :cljsbuild {:builds {:build {:source-paths ["src/cljc"]
                                :compiler     {:output-to     "resources/public/js/formation.js"
