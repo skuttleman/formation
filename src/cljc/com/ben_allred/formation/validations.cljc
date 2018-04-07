@@ -21,33 +21,35 @@
   (when (seq msgs)
     (assoc-in {} path msgs)))
 
-(defmulti ^:private ->pvalidator (comp fn? second list))
+(defmulti ^:private ->pvalidator fn?)
 
 (defmethod ^:private ->pvalidator true
-  [required? validator]
+  [validator]
   (fn [path m]
-    (let [value (get-in m path)
-          msgs (if (and required? (nil? value))
-                 ["required"]
-                 (try (when (some? value) (validator m))
-                      (catch #?(:clj Throwable :cljs js/Object) _
-                        ["error"])))]
-      (assoc-msgs path msgs))))
+    (->> (try (validator m)
+              (catch #?(:clj Throwable :cljs js/Object) _
+                ["error"]))
+         (assoc-msgs path))))
 
 (defmethod ^:private ->pvalidator false
-  [required? v]
+  [v]
   (let [msg (or (:tag (meta v)) "invalid")
         msgs (if (coll? msg) msg [msg])
         [pred & args] v]
     (fn [path m]
-      (let [value (get-in m path)
-            msgs (if (and required? (nil? value))
-                   ["required"]
-                   (try (when (and (some? value) (not (apply pred value args)))
-                          msgs)
-                        (catch #?(:clj Throwable :cljs js/Object) _
-                          msgs)))]
-        (assoc-msgs path msgs)))))
+      (let [ok? (try (apply pred (get-in m path) args)
+                     (catch #?(:clj Throwable :cljs js/Object) _
+                       false))]
+        (when-not ok?
+          (assoc-msgs path msgs))))))
+
+(defn ^:private wrap-required [pvalidator required?]
+  (fn [path m]
+    (let [value (get-in m path)]
+      (if (and required? (nil? value))
+        (assoc-msgs path ["required"])
+        (when (some? value)
+          (pvalidator path m))))))
 
 (defn ^:private pcombine [& pvalidators]
   (fn [path m]
@@ -55,16 +57,27 @@
          (map #(% path m))
          (apply merge-with deep-into))))
 
+(defn ^:private required->optional [m]
+  (->> m
+       (map (fn [[k v]]
+              (if (map? v)
+                [k (required->optional v)]
+                [k (vary-meta v #(assoc % :required (not (:optional %))))])))
+       (into {})))
+
 (defn ^:private make* [path config]
   (->> config
        (map (fn [[k v]]
               (let [path' (conj path k)]
                 (if (map? v)
                   (make* path' v)
-                  (-> pcombine
-                      (apply (map (partial ->pvalidator (:required! (meta v))) v))
+                  (-> (apply pcombine (map ->pvalidator v))
+                      (wrap-required (:required (meta v)))
                       (partial path'))))))
        (apply combine)))
 
-(defn make [config]
+(defn make-optional [config]
   (make* [] config))
+
+(def make-required
+  (comp make-optional required->optional))
