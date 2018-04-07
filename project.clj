@@ -12,6 +12,10 @@
             [com.jakemccrary/lein-test-refresh "0.22.0"]
             [cider/cider-nrepl "0.16.0"]]
   :hooks [leiningen.cljsbuild]
+
+  :profiles {:dev {:clean-targets ^{:protect false :replace true} ["resources/public/js"
+                                                                   :target-path]}}
+
   :cljsbuild {:builds {:build {:source-paths ["src/cljc"]
                                :compiler     {:output-to     "resources/public/js/formation.js"
                                               :optimizations :advanced
