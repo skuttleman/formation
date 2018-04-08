@@ -38,14 +38,11 @@
 (defn pred [keys pred & [msg]]
   (collect-errors (some-wrapper pred) (or msg "invalid") keys))
 
-(defn = [key-groups & [msg]]
+(defn = [keys & [msg]]
   (fn [m]
-    (let [f (->> key-groups
-                 (remove (fn [ks]
-                           (apply clojure.core/= (map (partial get m) ks))))
-                 (mapcat identity)
-                 (collect-errors nil? (or msg "not equal")))]
-      (f m))))
+    (when-not (and (seq keys)
+                   (apply clojure.core/= (map (partial get m) keys)))
+      ((collect-errors not (or msg "not equal") keys) m))))
 
 (defn matches [keys re & [msg]]
   (collect-errors (some-wrapper (partial re-matches re)) (or msg "invalid") keys))
@@ -64,5 +61,5 @@
 
 (defn coll-of [f & [msg]]
   (fn [c]
-    (when-not (every? (some-wrapper f) c)
+    (when-not (every? f c)
       [(or msg "invalid")])))

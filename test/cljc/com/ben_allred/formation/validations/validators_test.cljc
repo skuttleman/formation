@@ -148,32 +148,25 @@
 (deftest =-test
   (testing "(=)"
     (testing "when a message is supplied"
-      (let [equivalent (vs/= [[:key-1 :key-3] [:key-2 :key-4 :key-7]] "things should be equal")]
+      (let [equivalent (vs/= [:key-1 :key-2 :key-3] "things should be equal")]
         (testing "and when a key's value is nil"
-          (let [result (equivalent {:key-1 "thing" :key-2 nil :key-4 "thing"})]
+          (let [result (equivalent {:key-1 "thing" :key-3 nil})]
             (testing "does not return a message for those keys"
               (is (nil? (:key-2 result)))
-              (is (nil? (:key-3 result)))
-              (is (nil? (:key-7 result))))))
+              (is (nil? (:key-3 result))))))
 
-        (testing "and when a the key-group's values are not equal"
+        (testing "and when the keys' values are not equal"
           (let [result (equivalent {:key-1 "string" :key-2 "a different string"})]
             (testing "returns the message for that key"
               (is (= ["things should be equal"] (:key-1 result)))
               (is (= ["things should be equal"] (:key-2 result))))))
 
-        (testing "and when multiple key-groups' values are not equal"
-          (let [result (equivalent {:key-1 :keyword :key-7 true})]
-            (testing "returns the message for multiple keys"
-              (is (= ["things should be equal"] (:key-1 result)))
-              (is (= ["things should be equal"] (:key-7 result))))))
-
-        (testing "and when all key-groups' values are equal"
+        (testing "and when all keys' values are equal"
           (testing "returns nil"
-            (is (nil? (equivalent {:key-1 3 :key-2 17 :key-3 3 :key-4 17 :key-7 17})))))))
+            (is (nil? (equivalent {:key-1 3 :key-2 3 :key-3 3})))))))
 
     (testing "when a message is not supplied"
-      (let [equivalent (vs/= [[:key-1 :key-3]])]
+      (let [equivalent (vs/= [:key-1 :key-3])]
         (testing "and when a key-group's values are not equal"
           (let [result (equivalent {:key-1 ::some-value})]
             (testing "returns a default message"
@@ -181,7 +174,7 @@
 
     (testing "when called with nil"
       (testing "treats it like an empty map"
-        (is (nil? ((vs/= [[:a-key :another-key]]) nil)))))))
+        (is (nil? ((vs/= [:a-key :another-key]) nil)))))))
 
 (deftest matches-test
   (testing "(matches)"
@@ -334,9 +327,9 @@
   (testing "(coll-of)"
     (testing "when a message is supplied"
       (let [coll-of (vs/coll-of number? "numbers only")]
-        (testing "and when every value passes the predicate or is nil"
+        (testing "and when every value passes the predicate"
           (testing "returns nil"
-            (is (nil? (coll-of [1 2.3 nil -17 nil])))))
+            (is (nil? (coll-of [1 2.3 -17 5/3])))))
 
         (testing "and when every value fails the predicate"
           (testing "returns the message"
