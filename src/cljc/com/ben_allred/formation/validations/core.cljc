@@ -1,6 +1,6 @@
-(ns com.ben-allred.formation.validations
+(ns com.ben-allred.formation.validations.core
   (:require [com.ben-allred.formation.utils.core :as utils]
-            [com.ben-allred.formation.validators :as vs]))
+            [com.ben-allred.formation.validations.validators :as vs]))
 
 (defn ^:private assoc-msgs [path msgs]
   (when (seq msgs)

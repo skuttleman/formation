@@ -1,4 +1,4 @@
-(ns com.ben-allred.formation.tranformations)
+(ns com.ben-allred.formation.transformations.transformers)
 
 (defn m->fn [m]
   (fn [key]
@@ -19,15 +19,3 @@
     (if (seq? value)
       (map f value)
       (into (empty value) (map f) value))))
-
-(defn make [config]
-  (fn [m]
-    (when m
-      (->> m
-           (map (fn [[k v]]
-                  (if-let [v' (get config k)]
-                    (if (map? v')
-                      [k ((make v') v)]
-                      [k (v' v)])
-                    [k v])))
-           (into {})))))
