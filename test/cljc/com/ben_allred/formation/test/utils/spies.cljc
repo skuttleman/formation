@@ -20,7 +20,7 @@
 (defn called? [spy]
   (boolean (seq (calls spy))))
 
-(def never-called (complement called?))
+(def never-called? (complement called?))
 
 (defn called-with? [spy & args]
   (->> spy
