@@ -1,15 +1,16 @@
 (ns com.ben-allred.formation.core-test
   (:require [clojure.test :refer [deftest testing is]]
-            [com.ben-allred.formation.core :as formation]
+            [com.ben-allred.formation.core :as f]
             [clojure.string :as string]))
 
 (deftest transformations-test
   (testing "Transformations"
-    (let [t (formation/t:make {:color-code (formation/t:m->fn {:blue 1 :red 2 :yellow 3})
-                               :optional   (formation/t:when-some? string/upper-case)
-                               :nest       {:map  (comp (formation/t:map-of string/trim sort)
-                                                        (partial into {} (filter (comp some? val))))
-                                            :coll (formation/t:coll-of keyword)}})]
+    (let [t (f/make-transformer {:color-code (f/m->fn {:blue 1 :red 2 :yellow 3})
+                                 :optional   (f/when-some? string/upper-case)
+                                 :nest       {:map  (comp (f/transformer-map string/trim sort)
+                                                          (partial into {} (filter (comp some? val))))
+                                              :coll (f/transformer-coll keyword)}})]
+
       (testing "transforms data"
         (is (= {:color-code 2
                 :optional   "GGG"
@@ -40,6 +41,6 @@
         (is (= {:nest {}}
                (t {:nest {}})))))))
 
-(deftest validations-test
+(deftest validator-test
   (testing "Validations"
-    (testing "validates data")))
+    ))

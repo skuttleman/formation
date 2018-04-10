@@ -9,17 +9,19 @@
     (testing "given a transformation config"
       (let [str-spy (spies/create str)
             set-spy (spies/create set)
-            config {:key-1 str-spy
-                    :key-2 keyword
-                    :key-3 {:sub-key-1 identity
-                            :sub-key-2 set-spy
-                            :sub-key-3 {:sub-sub string/upper-case}}}
+            config [#(update-in % [:key-3 :sub-key-3 :sub-sub] name)
+                    {:key-1 str-spy
+                     :key-2 [keyword]
+                     :key-3 [{:sub-key-1 identity
+                              :sub-key-2 [(partial map keyword) set-spy]
+                              :sub-key-3 {:sub-sub string/upper-case}}
+                             #(assoc % :always-here? true)]}]
             make (t/make config)
             data {:key-1 17
                   :key-2 "key-1"
                   :key-3 {:sub-key-1 ::anything
-                          :sub-key-2 [4 7 7 4]
-                          :sub-key-3 {:sub-sub "string"}}}]
+                          :sub-key-2 ["4" "7" "7" "4"]
+                          :sub-key-3 {:sub-sub :string}}}]
         (testing "when called with all values"
           (let [result (make data)]
             (testing "transforms root values"
@@ -28,19 +30,20 @@
 
             (testing "transforms nested values"
               (is (= ::anything (get-in result [:key-3 :sub-key-1])))
-              (is (= #{4 7} (get-in result [:key-3 :sub-key-2])))
+              (is (= #{:4 :7} (get-in result [:key-3 :sub-key-2])))
+              (is (true? (get-in result [:key-3 :always-here?])))
               (is (= "STRING" (get-in result [:key-3 :sub-key-3 :sub-sub]))))))
 
         (testing "when called with extra values"
           (let [result (-> data
                            (assoc :key-4 ::key-4)
-                           (assoc-in [:key-3 :sub-key3 :sub-sub-2] ::sub-sub-2)
+                           (assoc-in [:key-3 :sub-key-3 :sub-sub-2] ::sub-sub-2)
                            (make))]
             (testing "carries additional root values through"
               (is (= ::key-4 (:key-4 result))))
 
             (testing "carries additional nested values through"
-              (is (= ::sub-sub-2 (get-in result [:key-3 :sub-key3 :sub-sub-2]))))))
+              (is (= ::sub-sub-2 (get-in result [:key-3 :sub-key-3 :sub-sub-2]))))))
 
         (testing "when called with missing values"
           (spies/reset! str-spy set-spy)

@@ -20,18 +20,6 @@
     (or (nil? value)
         (utils/silent (pred value)))))
 
-(defn nest [k validator]
-  (fn [m]
-    (let [msgs (validator (get m k))]
-      (when (seq msgs)
-        {k msgs}))))
-
-(defn combine [& validators]
-  (fn [m]
-    (->> validators
-         (map #(% m))
-         (apply merge-with utils/deep-into))))
-
 (defn required [keys & [msg]]
   (collect-errors some? (or msg "required") keys))
 
@@ -55,7 +43,7 @@
 
 (defn map-of [key-fn val-fn & [msg]]
   (fn [m]
-    (collect-errors* (fn [[k v]] (and (key-fn k) (or (nil? v) (val-fn v))))
+    (collect-errors* (fn [[k v]] (and (key-fn k) (val-fn v)))
                      (juxt key (constantly [(or msg "invalid")]))
                      m)))
 

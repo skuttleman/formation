@@ -1,16 +1,23 @@
-(ns com.ben-allred.formation.transformations.core)
+(ns com.ben-allred.formation.transformations.core
+  (:require [com.ben-allred.formation.shared.core :as s]))
 
 (declare make)
 
+(defn ^:private combine [& transformers]
+  (reduce #(comp (make %2) %1) identity transformers))
+
 (defn ^:private map-config [config [k v]]
-  (let [config-v (get config k)]
-    (cond
-      (map? config-v) [k ((make config-v) v)]
-      config-v [k (config-v v)]
-      :else [k v])))
+  (let [component (get config k)]
+    [k (cond
+         (map? component) ((make component) v)
+         (coll? component) ((apply combine (map make component)) v)
+         (ifn? component) (component v)
+         :else v)]))
 
 (defn make [config]
-  (fn [m]
-    (some->> m
-             (map (partial map-config config))
-             (into {}))))
+  (cond
+    (map? config) (comp (partial into {})
+                        (partial map #(map-config config %)))
+    (coll? config) (apply combine (map make config))
+    (ifn? config) config
+    :else identity))

@@ -1,13 +1,5 @@
 (ns com.ben-allred.formation.transformations.transformers)
 
-(defn m->fn [m]
-  (fn [key]
-    (get m key)))
-
-(defn when-some? [f]
-  (fn [value]
-    (some-> value (f))))
-
 (defn map-of [key-f val-f]
   (fn [value]
     (->> value
