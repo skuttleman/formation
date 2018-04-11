@@ -60,8 +60,8 @@
   Does not validate nil or missing values."
   ([keys p]
    (pred keys p nil))
-  ([keys pred msg]
-   (vs/pred keys pred msg)))
+  ([keys p msg]
+   (vs/pred keys p msg)))
 
 (defn =
   "Takes a seq of keys and produces a message when the values of the keys are not equal.

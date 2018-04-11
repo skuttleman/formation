@@ -1,6 +1,6 @@
 (ns com.ben-allred.formation.validations.validators
   (:refer-clojure :exclude [=])
-  (:require [com.ben-allred.formation.utils.core :as utils]))
+  (:require [com.ben-allred.formation.utils.core :as utils :include-macros true]))
 
 (defn ^:private collect-errors* [remove-fn map-fn s]
   (when-let [errors (->> s
