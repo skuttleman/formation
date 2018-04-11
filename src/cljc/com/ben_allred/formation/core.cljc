@@ -39,7 +39,8 @@
 
 (defn make-validator
   "Makes a validator which takes in a value and returns a seq of one or messages nested at the same
-  point in the config tree when a value does not satisfy the validator
+  point in the config tree when a value does not satisfy the validator. A validator function returns
+  a sequence of one or more messages (presumably strings) when there are issues or else returns nil.
 
   (make-validator {:name #(when-not (string? %) [\"name must be a string\"])})"
   [config]
@@ -57,8 +58,8 @@
   "Takes a seq of keys, a predicate, and an optional message and returns a validator
   which produces a message for any specified key which does not satisfy the the predicate.
   Does not validate nil or missing values."
-  ([keys pred]
-   (pred keys pred nil))
+  ([keys p]
+   (pred keys p nil))
   ([keys pred msg]
    (vs/pred keys pred msg)))
 

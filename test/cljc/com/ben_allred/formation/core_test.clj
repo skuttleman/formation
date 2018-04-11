@@ -5,14 +5,15 @@
 
 (deftest transformations-test
   (testing "Transformations"
-    (let [t (f/make-transformer {:color-code (f/m->fn {:blue 1 :red 2 :yellow 3})
-                                 :optional   (f/when-some? string/upper-case)
-                                 :nest       {:map  (comp (f/transformer-map string/trim sort)
-                                                          (partial into {} (filter (comp some? val))))
-                                              :coll (f/transformer-coll keyword)}})]
+    (let [t (f/make-transformer [{:color-code (f/m->fn {:blue 1 :red 2 :yellow 3})
+                                  :optional   (f/when-some? string/upper-case)
+                                  :nest       {:map  [(partial into {} (filter (comp some? val)))
+                                                      (f/transformer-map string/trim sort)]
+                                               :coll (f/transformer-coll keyword)}}
+                                 #(update % :color-code (f/when-some? (partial * -1)))])]
 
       (testing "transforms data"
-        (is (= {:color-code 2
+        (is (= {:color-code -2
                 :optional   "GGG"
                 :nest       {:map  {"a" [1 2 3]
                                     "b" [:a :b :c]}
@@ -24,7 +25,7 @@
                                        "c" nil}
                                 :coll #{"things" "and" "stuff"}}})))
 
-        (is (= {:color-code 1
+        (is (= {:color-code -1
                 :optional   nil
                 :nest       {:map  {}
                              :coll [:things :and :stuff]}}
@@ -38,9 +39,46 @@
                (t {:color-code :orange
                    :nest       {:coll (list "alone")}})))
 
-        (is (= {:nest {}}
-               (t {:nest {}})))))))
+        (is (= {:color-code nil
+                :nest       {}}
+               (t {:color-code nil
+                   :nest       {}})))))))
 
 (deftest validator-test
   (testing "Validations"
-    ))
+    (let [v (f/make-validator [{:name #(when-not (string? %) ["name should be a string"])}
+                               {:person-1 [(f/required [:name] "no nameless people")
+                                           (f/max-length [:name] 20 "abbreviate, please")
+                                           (f/min-length [:name] 3 "no one's name is that short")
+                                           (f/matches [:favorite-letter] #"[A-Za-z]" "not a letter")
+                                           (f/pred [:hair-style] #{:toupe :pompadour :mohawk})]}
+                               #(when (and (get-in % [:person-1 :name])
+                                           (= (get-in % [:person-1 :name])
+                                              (get-in % [:person-2 :name])))
+                                  {:person-1 {:name ["must be two different people"]}
+                                   :person-2 {:name ["must be two different people"]}})])]
+
+      (testing "validates missing data"
+        (is (= {:name     ["name should be a string"]
+                :person-1 {:name ["no nameless people"]}}
+               (v {}))))
+
+      (testing "validates incorrect data"
+        (is (= {:name     ["name should be a string"]
+                :person-1 {:name            ["no one's name is that short" "must be two different people"]
+                           :favorite-letter ["not a letter"]
+                           :hair-style      ["invalid"]}
+                :person-2 {:name ["must be two different people"]}}
+               (v {:name     :name
+                   :person-1 {:name            "Pe"
+                              :hair-style      :comb-over
+                              :favorite-letter 17}
+                   :person-2 {:name "Pe"}})))
+
+        (is (= {:person-1 {:name ["abbreviate, please"]}}
+               (v {:name "a string"
+                   :person-1 {:name "Apu Nahasapeemapetilon"}}))))
+
+      (testing "returns nil for valid data"
+        (is (nil? (v {:name "a name"
+                      :person-1 {:name "Johnny"}})))))))
