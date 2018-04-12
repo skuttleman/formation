@@ -1,7 +1,8 @@
 (ns com.ben-allred.formation.validations.validators
   (:refer-clojure :exclude [=])
   (:require [com.ben-allred.formation.utils.core :as utils :include-macros true]
-            [com.ben-allred.formation.validations.core :as v]))
+            [com.ben-allred.formation.validations.core :as v]
+            [com.ben-allred.formation.shared.core :as s]))
 
 (defn ^:private collect-errors* [remove-fn map-fn xs]
   (when-let [errors (->> xs
@@ -70,3 +71,6 @@
           (if (map? (first validations))
             (apply merge-with utils/deep-into validations)
             (distinct (apply concat validations))))))))
+
+(defn tuple-of [& configs]
+  (s/tuple-of (map v/make configs)))

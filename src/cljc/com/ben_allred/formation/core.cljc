@@ -23,24 +23,35 @@
   (t/make config))
 
 (defn transformer-map
-  "Transforms a map by passing it's keys and values to a key-fn and val-fn respectively."
-  [key-fn val-fn]
-  (ts/map-of key-fn val-fn))
+  "Transforms a map by passing it's keys and values through validators made with key-cfg
+  and val-cfg via make-transformer."
+  [key-cfg val-cfg]
+  (ts/map-of key-cfg val-cfg))
 
 (defn transformer-coll
   "Transforms a collection of values into a collection of the same type. May lazily
-  evaluate transforming lists and seqs."
-  [f]
-  (ts/coll-of f))
+  evaluate transforming lists and seqs.
+
+  ((transfromer-coll keyword) #{\"a\" \"b\" \"c\"})
+  ;; => #{:a :b :c}"
+  [config]
+  (ts/coll-of config))
+
+(defn transformer-tuple
+  "Transforms a tuple though a series of transformers made via make-transformer. Length of
+  return value is always the length of configs."
+  [& configs]
+  (apply ts/tuple-of configs))
 
 
 
 ;; Validations
 
 (defn make-validator
-  "Makes a validator which takes in a value and returns a seq of one or messages nested at the same
-  point in the config tree when a value does not satisfy the validator. A validator function returns
-  a sequence of one or more messages (presumably strings) when there are issues or else returns nil.
+  "Makes a validator which takes in a value and returns a seq of one or messages nested at
+  the same point in the config tree when a value does not satisfy the validator. A validator
+  function returns a sequence of one or more messages (presumably strings) when there are
+  issues or else returns nil.
 
   (make-validator {:name #(when-not (string? %) [\"name must be a string\"])})"
   [config]
@@ -107,6 +118,14 @@
   where every value satisfies the config. Returns a seq of distinct error messages or nil."
   [config]
   (vs/coll-of config))
+
+(defn validator-tuple
+  "Validates a tuple though a series of validators made via make-validator. Length of
+  return value is always the length of configs."
+  [& configs]
+  (apply vs/tuple-of configs))
+
+
 
 ;; Utilities
 

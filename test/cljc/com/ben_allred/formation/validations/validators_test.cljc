@@ -1,5 +1,5 @@
 (ns com.ben-allred.formation.validations.validators-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest testing is are]]
             [com.ben-allred.formation.validations.validators :as vs]))
 
 (deftest required-test
@@ -183,3 +183,23 @@
       (testing "when called with nil"
         (testing "returns nil"
           (is (nil? (coll-of nil))))))))
+
+(deftest tuple-of-test
+  (testing "(tuple-of)"
+    (let [tuple-of (vs/tuple-of (vs/pred number?)
+                                {:values [(vs/min-length 5)
+                                          (vs/max-length 10)]}
+                                [(vs/pred string? "only strings")
+                                 (vs/matches #"[A-Z]+" "only caps")])]
+      (testing "validates values in a tuple"
+        (is (= [nil nil nil]
+               (tuple-of [1 {:values [1 2 3 4 5 6]} "ASDFASDF"])))
+
+        (is (= [["invalid"] {:values ["minimum length 5"]} ["only strings" "only caps"]]
+               (tuple-of [:a {:values [1 2]} :keyword]))))
+
+      (testing "length of response matches length of configs"
+        (are [tuple length] (= (count (tuple-of tuple)) length)
+          [] 3
+          [nil nil nil] 3
+          [nil nil nil nil nil] 3)))))

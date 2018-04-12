@@ -1,5 +1,5 @@
 (ns com.ben-allred.formation.transformations.transformers-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest testing is are]]
             [com.ben-allred.formation.transformations.transformers :as ts]
             [clojure.string :as string]))
 
@@ -55,7 +55,23 @@
 
     (testing "when created with a config"
       (let [coll-of (ts/coll-of {:key   name
-                                :value [int #(* % %)]})]
+                                 :value [int #(* % %)]})]
         (testing "transforms the collection"
           (is (= [{:key "key-1" :value 16} {:key "key-2" :value 64}]
                  (coll-of [{:key :key-1 :value 4.424} {:key :key-2 :value 8.88}]))))))))
+
+(deftest tuple-of-test
+  (testing "(tuple-of)"
+    (let [tuple-of (ts/tuple-of keyword {:id str :values sort})]
+      (testing "transforms each value in tuple"
+        (is (= [:keyword {:id "123" :values [1 2 3 4]}]
+               (tuple-of ["keyword" {:id 123 :values [2 4 1 3]}]))))
+
+      (testing "return value is length of config args"
+        (are [tuple length] (= (count (tuple-of tuple)) length)
+          [] 2
+          [nil {:id :id :values []}] 2
+          [nil nil nil nil nil] 2))
+
+      (testing "returns a vector"
+        (is (vector? (tuple-of [:anything {}])))))))
