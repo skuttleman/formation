@@ -1,5 +1,4 @@
-(ns com.ben-allred.formation.transformations.core
-  (:require [com.ben-allred.formation.shared.core :as s]))
+(ns com.ben-allred.formation.transformations.core)
 
 (declare make)
 
