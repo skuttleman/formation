@@ -145,67 +145,41 @@
 
 (deftest map-of-test
   (testing "(map-of)"
-    (testing "when a message is supplied"
-      (let [map-of (vs/map-of number? keyword? "numbers and keywords only")]
-        (testing "and when a key's value is nil"
-          (testing "returns a message for that key"
-            (is (= {1 ["numbers and keywords only"]} (map-of {1 nil 2 :thing})))))
+    (let [map-of (vs/map-of [(vs/pred number? "key should be a number")
+                             (vs/required "key cannot be nil")]
+                            [(vs/pred keyword? "val should be a keyword")
+                             (vs/required "val cannot be nil")])]
+      (testing "when a key or value does not satisfy the validator"
+        (let [result (map-of {nil :thing "string" :value :number 17})]
+          (testing "returns the message for that key"
+            (is (= ["key cannot be nil"] (get result nil)))
+            (is (= ["key should be a number"] (get result "string")))
+            (is (= ["key should be a number" "val should be a keyword"] (:number result))))))
 
-        (testing "and when a key fails the predicate"
-          (let [result (map-of {nil :thing "string" :value :number 17})]
-            (testing "returns the message for that key"
-              (is (= ["numbers and keywords only"] (get result nil)))
-              (is (= ["numbers and keywords only"] (get result "string")))
-              (is (= ["numbers and keywords only"] (:number result))))))
 
-        (testing "and when a key's value fails the predicate"
-          (let [result (map-of {1 "something" 4 :fine})]
-            (testing "returns the message for that key"
-              (is (= {1 ["numbers and keywords only"]} result)))))
+      (testing "when all keys and values pass the predicate"
+        (testing "returns nil"
+          (is (nil? (map-of {1 :one 2 :two 3 :three})))))
 
-        (testing "and when multiple keys and/or values fail the predicate"
-          (let [result (map-of {1 "something" :number 3 4 :find})]
-            (testing "returns the message for multiple keys"
-              (is (= {1 ["numbers and keywords only"] :number ["numbers and keywords only"]}
-                     result)))))
-
-        (testing "and when all keys and values pass the predicate"
-          (testing "returns nil"
-            (is (nil? (map-of {1 :one 2 :two 3 :three})))))))
-
-    (testing "when a message is not supplied"
-      (let [map-of (vs/map-of string? vector?)]
-        (testing "and when a key or value fails the predicate"
-          (let [result (map-of {:whatever :whatever})]
-            (testing "returns a default message"
-              (is (= ["invalid"] (:whatever result))))))
-
-        (testing "when called with nil"
-          (testing "returns nil"
-            (is (nil? (map-of nil)))))))))
+      (testing "when called with nil"
+        (testing "returns nil"
+          (is (nil? (map-of nil))))))))
 
 (deftest coll-of-test
   (testing "(coll-of)"
-    (testing "when a message is supplied"
-      (let [coll-of (vs/coll-of number? "numbers only")]
-        (testing "and when every value passes the predicate"
-          (testing "returns nil"
-            (is (nil? (coll-of [1 2.3 -17 5/3])))))
+    (let [coll-of (vs/coll-of (vs/pred number? "numbers only"))]
+      (testing "when every value passes the predicate"
+        (testing "returns nil"
+          (is (nil? (coll-of [1 2.3 -17 5/3])))))
 
-        (testing "and when every value fails the predicate"
-          (testing "returns the message"
-            (is (= ["numbers only"] (coll-of [:a :b :c])))))
+      (testing "when every value fails the predicate"
+        (testing "returns the message"
+          (is (= ["numbers only"] (coll-of [:a :b :c])))))
 
-        (testing "and when some values fail the predicate"
-          (testing "returns the message"
-            (is (= ["numbers only"] (coll-of [1 2 nil 4 "17"])))))))
+      (testing "when some values fail the predicate"
+        (testing "returns the message"
+          (is (= ["numbers only"] (coll-of [1 2 nil 4 "17"])))))
 
-    (testing "when a message is not supplied"
-      (let [coll-of (vs/coll-of keyword?)]
-        (testing "and when a value fails the predicate"
-          (testing "returns a default message"
-            (is (= ["invalid"] (coll-of {:what's :this?})))))
-
-        (testing "and when the value is nil"
-          (testing "returns nil"
-            (is (nil? (coll-of nil)))))))))
+      (testing "when called with nil"
+        (testing "returns nil"
+          (is (nil? (coll-of nil))))))))

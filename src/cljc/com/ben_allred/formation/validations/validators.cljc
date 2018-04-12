@@ -45,13 +45,28 @@
   (collect-errors (some-wrapper (comp #(<= % length) count))
                   (or msg (str "maximum length " length))))
 
-(defn map-of [key-fn val-fn & [msg]]
-  (fn [m]
-    (collect-errors* (fn [[k v]] (and (key-fn k) (val-fn v)))
-                     (juxt key (constantly [(or msg "invalid")]))
-                     m)))
+(defn map-of [key-cfg val-cfg]
+  (let [key-v (v/make key-cfg)
+        val-v (v/make val-cfg)]
+    (fn [m]
+      (let [xs (seq m)
+            key-validations (->> xs
+                                 (map (juxt first (comp key-v first)))
+                                 (remove (comp nil? second))
+                                 (into {}))
+            val-validations (->> xs
+                                 (map (juxt first (comp val-v second)))
+                                 (remove (comp nil? second))
+                                 (into {}))
+            validations (merge-with utils/deep-into key-validations val-validations)]
+        (when (seq validations)
+            (into {} validations))))))
 
-(defn coll-of [f & [msg]]
-  (fn [c]
-    (when-not (every? f c)
-      [(or msg "invalid")])))
+(defn coll-of [config]
+  (let [v (v/make config)]
+    (fn [coll]
+      (let [validations (remove nil? (map v coll))]
+        (when (seq validations)
+          (if (map? (first validations))
+            (apply merge-with utils/deep-into validations)
+            (distinct (apply concat validations))))))))
