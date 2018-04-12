@@ -1,4 +1,4 @@
-(defproject com.ben-allred/formation "0.2.0"
+(defproject com.ben-allred/formation "0.3.0"
   :description "A validation and conforming library for nested data structures"
   :url "https://github.com/skuttleman/formation"
   :license {:name "Eclipse Public License"
