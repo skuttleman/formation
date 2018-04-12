@@ -17,7 +17,7 @@
 (deftest when-some?-test
   (testing "(when-some?)"
     (let [spy (spies/create (constantly ::result))
-          when-some? (s/when-some? spy)]
+          when-some? (s/when-somep spy)]
       (testing "when value is not nil"
         (spies/reset! spy)
 

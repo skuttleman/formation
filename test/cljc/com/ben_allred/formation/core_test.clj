@@ -5,12 +5,12 @@
 
 (deftest transformations-test
   (testing "Transformations"
-    (let [t (f/make-transformer [{:color-code (f/m->fn {:blue 1 :red 2 :yellow 3})
-                                  :optional   (f/when-some? string/upper-case)
+    (let [t (f/make-transformer [{:color-code (f/ifn->fn {:blue 1 :red 2 :yellow 3})
+                                  :optional   (f/when-somep string/upper-case)
                                   :nest       {:map  [(partial into {} (filter (comp some? val)))
                                                       (f/transformer-map string/trim sort)]
                                                :coll (f/transformer-coll keyword)}}
-                                 #(update % :color-code (f/when-some? (partial * -1)))])]
+                                 #(update % :color-code (f/when-somep (partial * -1)))])]
 
       (testing "transforms data"
         (is (= {:color-code -2
@@ -46,12 +46,12 @@
 
 (deftest validator-test
   (testing "Validations"
-    (let [v (f/make-validator [{:name #(when-not (string? %) ["name should be a string"])}
-                               {:person-1 [(f/required [:name] "no nameless people")
-                                           (f/max-length [:name] 20 "abbreviate, please")
-                                           (f/min-length [:name] 3 "no one's name is that short")
-                                           (f/matches [:favorite-letter] #"[A-Za-z]" "not a letter")
-                                           (f/pred [:hair-style] #{:toupe :pompadour :mohawk})]}
+    (let [v (f/make-validator [{:name (f/pred string? "name should be a string")}
+                               {:person-1 {:name            [(f/required "no nameless people")
+                                                             (f/max-length 20 "abbreviate, please")
+                                                             (f/min-length 3 "no one's name is that short")]
+                                           :favorite-letter (f/matches #"[A-Za-z]" "not a letter")
+                                           :hair-style      (f/pred #{:toupe :pompadour :mohawk})}}
                                #(when (and (get-in % [:person-1 :name])
                                            (= (get-in % [:person-1 :name])
                                               (get-in % [:person-2 :name])))
@@ -59,8 +59,7 @@
                                    :person-2 {:name ["must be two different people"]}})])]
 
       (testing "validates missing data"
-        (is (= {:name     ["name should be a string"]
-                :person-1 {:name ["no nameless people"]}}
+        (is (= {:person-1 {:name ["no nameless people"]}}
                (v {}))))
 
       (testing "validates incorrect data"
@@ -76,9 +75,9 @@
                    :person-2 {:name "Pe"}})))
 
         (is (= {:person-1 {:name ["abbreviate, please"]}}
-               (v {:name "a string"
+               (v {:name     "a string"
                    :person-1 {:name "Apu Nahasapeemapetilon"}}))))
 
       (testing "returns nil for valid data"
-        (is (nil? (v {:name "a name"
+        (is (nil? (v {:name     "a name"
                       :person-1 {:name "Johnny"}})))))))

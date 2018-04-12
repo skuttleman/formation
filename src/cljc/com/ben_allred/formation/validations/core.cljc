@@ -1,7 +1,5 @@
 (ns com.ben-allred.formation.validations.core
-  (:require [com.ben-allred.formation.utils.core :as utils]
-            [com.ben-allred.formation.validations.validators :as vs]
-            [com.ben-allred.formation.shared.core :as s]))
+  (:require [com.ben-allred.formation.utils.core :as utils]))
 
 (declare make)
 
@@ -30,10 +28,11 @@
 (defn make [config]
   (cond
     (map? config) (fn [m]
-                    (->> config
-                         (map (partial map-config m))
-                         (remove nil?)
-                         (into {})))
+                    (when-let [results (->> config
+                                            (map (partial map-config m))
+                                            (remove nil?)
+                                            (seq))]
+                      (into {} results)))
     (coll? config) (apply combine (map make config))
     (ifn? config) config
     :else identity))

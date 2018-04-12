@@ -1,9 +1,9 @@
 (ns com.ben-allred.formation.shared.core)
 
-(defn ifn->fn [m]
+(defn ifn->fn [ifn]
   (fn [key]
-    (get m key)))
+    (get ifn key)))
 
-(defn when-some? [f]
+(defn when-somep [pred]
   (fn [value]
-    (some-> value f)))
+    (some-> value pred)))

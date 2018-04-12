@@ -47,85 +47,79 @@
   (v/make config))
 
 (defn required
-  "Takes a seq of keys and an optional message and returns a validator which produces
+  "Takes an optional message and returns a validator which produces
   a message for any key in the map that is nil or missing."
-  ([keys]
-   (required keys nil))
-  ([keys msg]
-   (vs/required keys msg)))
+  ([]
+   (required nil))
+  ([msg]
+   (vs/required msg)))
 
 (defn pred
-  "Takes a seq of keys, a predicate, and an optional message and returns a validator
-  which produces a message for any specified key which does not satisfy the the predicate.
-  Does not validate nil or missing values."
-  ([keys p]
-   (pred keys p nil))
-  ([keys p msg]
-   (vs/pred keys p msg)))
+  "Takes a predicate and an optional message and returns a validator which produces
+  a message when the value does not satisfy the the predicate. Does not validate nil."
+  ([p]
+   (pred p nil))
+  ([p msg]
+   (vs/pred p msg)))
 
 (defn =
   "Takes a seq of keys and produces a message when the values of the keys are not equal.
-  Does not validate nil or missing values."
+  Does not validate nil."
   ([keys]
    (= keys nil))
   ([keys msg]
    (vs/= keys msg)))
 
 (defn matches
-  "Takes a seq of keys, a regex pattern, and an optional message and returns a validator
-  which produces a message when the values of the provided keys do not match the pattern.
-  Does not validate nil or missing values."
-  ([keys re]
-   (matches keys re nil))
-  ([keys re msg]
-   (vs/matches keys re msg)))
+  "Takes a regex pattern and an optional message and returns a validator
+  which produces a message when the value does not match the pattern.
+  Does not validate nil."
+  ([re]
+   (matches re nil))
+  ([re msg]
+   (vs/matches re msg)))
 
 (defn min-length
-  "Takes a seq of keys, a number, and an optional message and validates the values of the
-  keys have a count greater than or equal to the length.
-  Does not validate nil or missing values."
-  ([keys length]
-   (min-length keys length nil))
-  ([keys length msg]
-   (vs/min-length keys length msg)))
+  "Takes a number and an optional message and validates that the value has a count greater than
+  or equal to the length. Does not validate nil."
+  ([length]
+   (min-length length nil))
+  ([length msg]
+   (vs/min-length length msg)))
 
 (defn max-length
-  "Takes a seq of keys, a number, and an optional message and validates the values of the
-  keys have a count less than or equal to the length.
-  Does not validate nil or missing values."
-  ([keys length]
-   (max-length keys length nil))
-  ([keys length msg]
-   (vs/max-length keys length msg)))
+  "Takes a number and an optional message and validates the value has a count less than or equal
+  to the length. Does not validate nil."
+  ([length]
+   (max-length length nil))
+  ([length msg]
+   (vs/max-length length msg)))
 
 (defn validator-map
-  "Takes a key-pred, val-pred, and an optional message and returns a validator which expects
-  its value to be map where all keys pass the key-pred and all values pass the val-pred."
-  ([key-pred val-pred]
-   (validator-map key-pred val-pred nil))
-  ([key-pred val-pred msg]
-   (vs/map-of key-pred val-pred msg)))
+  "Takes a key-validator and a val-validator returns a validator which expects its value to be map
+  where all keys pass the key-validator and all values pass the val-validator. The key and/or val
+  error messages are concatenated together under each key with errors."
+  [key-validator val-validator]
+  (vs/map-of key-validator val-validator))
 
 (defn validator-coll
-  "Takes a pred and an optional message and returns a validator which expects its value to
-  be a collection where every value passes the predicate."
-  ([pred]
-   (validator-coll pred nil))
-  ([pred msg]
-   (vs/coll-of pred msg)))
+  "Takes a validator config and returns a validator which expects its value to be a collection
+  where every value satisfies the config. Returns a seq of distinct error messages or nil."
+  [config]
+  (vs/coll-of config))
 
 ;; Utilities
 
-(defn m->fn
+(defn ifn->fn
   "Utility wrapper for maps when you want to use them as a transforming function
   because make-transformer treats maps as nested transformations."
-  [m]
-  (s/ifn->fn m))
+  [ifn]
+  (s/ifn->fn ifn))
 
-(defn when-some?
+(defn when-somep
   "Utility wrapper for transforming functions that you only want called when the
   value is not nil (i.e. not required).
 
-  (make-transformer {:something (u:when-some? string/upper-case)})"
-  [f]
-  (s/when-some? f))
+  (make-transformer {:something (u:when-somep string/upper-case)})"
+  [pred]
+  (s/when-somep pred))
