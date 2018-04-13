@@ -148,7 +148,7 @@ non-nil value against the predicate.
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (v/pred pos-int? "positive integer required"))
+(def validator (f/pred pos-int? "positive integer required"))
 
 (validator 23)
 ;; => nil
@@ -178,7 +178,7 @@ non-nil value against the regex via `re-matches`.
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (v/matches #"[a-z]{8}[0-1]{4}" "8 letters then 4 numbers"))
+(def validator (f/matches #"[a-z]{8}[0-1]{4}" "8 letters then 4 numbers"))
 
 (validator "iehclsyg9384")
 ;; => nil
@@ -194,7 +194,7 @@ the `count` of the value is less than the length.
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (v/min-length 13 "at least 13"))
+(def validator (f/min-length 13 "at least 13"))
 
 (validator "asdfadseaslkdjfklaejasdf")
 ;; => nil
@@ -210,7 +210,7 @@ the `count` of the value is greater than the length.
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (v/max-length 13 "no more than least 13"))
+(def validator (f/max-length 13 "no more than least 13"))
 
 (validator [1 2 3])
 ;; => nil
@@ -227,8 +227,8 @@ of errors with any keys which produced errors.
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (v/validator-map [(v/required "key required") (v/pred keyword?)]
-                                [(v/required "val required") (v/pred string?)]))
+(def validator (f/validator-map [(f/required "key required") (f/pred keyword?)]
+                                [(f/required "val required") (f/pred string?)]))
 
 (validator {:fine "string" :bad-val 13 nil nil})
 ;; => {:bad-val ("invalid") nil ("key required" "val required")}
