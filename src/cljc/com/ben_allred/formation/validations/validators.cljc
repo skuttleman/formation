@@ -1,6 +1,6 @@
 (ns com.ben-allred.formation.validations.validators
   (:refer-clojure :exclude [=])
-  (:require [com.ben-allred.formation.utils.core :as utils :include-macros true]
+  (:require [com.ben-allred.formation.utils.core :as utils]
             [com.ben-allred.formation.validations.core :as v]
             [com.ben-allred.formation.shared.core :as s]))
 
@@ -19,7 +19,9 @@
 (defn ^:private some-wrapper [pred]
   (fn [value]
     (or (nil? value)
-        (utils/silent (pred value)))))
+        (try (pred value)
+             (catch #?(:clj Throwable :cljs js/Object) _
+               nil)))))
 
 (defn required [& [msg]]
   (collect-errors some? (or msg "required")))
