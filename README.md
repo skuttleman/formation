@@ -8,7 +8,7 @@ A Clojure library for data validation and transformation.
 
 In your `project.clj` add to your dependencies:
 
-> [com.ben-allred/formation "0.3.0"]
+> [com.ben-allred/formation "0.3.2"]
 
 Creating and using validators and transformers is nesting functions that transform small parts of your data into a data
 model that resembles your actual data model.
