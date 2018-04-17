@@ -173,12 +173,14 @@
           (is (nil? (coll-of [1 2.3 -17 5/3])))))
 
       (testing "when every value fails the predicate"
-        (testing "returns the message"
-          (is (= ["numbers only"] (coll-of [:a :b :c])))))
+        (testing "returns the message for each failing value"
+          (is (= [["numbers only"] ["numbers only"] ["numbers only"]]
+                 (coll-of [:a :b :c])))))
 
       (testing "when some values fail the predicate"
-        (testing "returns the message"
-          (is (= ["numbers only"] (coll-of [1 2 nil 4 "17"])))))
+        (testing "returns nil for passing values"
+          (is (= [nil ["numbers only"] nil ["numbers only"]]
+                 (coll-of [1 "1" 2 :two])))))
 
       (testing "when called with nil"
         (testing "returns nil"

@@ -68,11 +68,9 @@
 (defn coll-of [config]
   (let [v (v/make config)]
     (fn [coll]
-      (let [validations (remove nil? (map v coll))]
-        (when (seq validations)
-          (if (map? (first validations))
-            (apply merge-with utils/deep-into validations)
-            (distinct (apply concat validations))))))))
+      (let [validations (map v coll)]
+        (when (seq (remove nil? validations))
+          validations)))))
 
 (defn tuple-of [& configs]
   (s/tuple-of (map v/make configs)))
