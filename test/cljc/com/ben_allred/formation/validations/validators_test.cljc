@@ -194,14 +194,13 @@
                                 [(vs/pred string? "only strings")
                                  (vs/matches #"[A-Z]+" "only caps")])]
       (testing "validates values in a tuple"
-        (is (= [nil nil nil]
-               (tuple-of [1 {:values [1 2 3 4 5 6]} "ASDFASDF"])))
-
         (is (= [["invalid"] {:values ["minimum length 5"]} ["only strings" "only caps"]]
                (tuple-of [:a {:values [1 2]} :keyword]))))
 
-      (testing "length of response matches length of configs"
-        (are [tuple length] (= (count (tuple-of tuple)) length)
-          [] 3
-          [nil nil nil] 3
-          [nil nil nil nil nil] 3)))))
+      (testing "validates partial failures"
+        (is (= [nil {:values ["maximum length 10"]} nil]
+               (tuple-of [1 {:values "aklsjdfkladsjhfjasdhfk"} "UUU"]))))
+
+      (testing "when there are no validation errors"
+        (testing "returns nil"
+          (is (nil? (tuple-of [1 {:values [1 2 3 4 5 6]} "ASDFASDF"]))))))))

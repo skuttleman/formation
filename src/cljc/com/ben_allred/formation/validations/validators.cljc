@@ -63,7 +63,7 @@
                                  (into {}))
             validations (merge-with utils/deep-into key-validations val-validations)]
         (when (seq validations)
-            (into {} validations))))))
+          (into {} validations))))))
 
 (defn coll-of [config]
   (let [v (v/make config)]
@@ -73,4 +73,8 @@
           validations)))))
 
 (defn tuple-of [& configs]
-  (s/tuple-of (map v/make configs)))
+  (let [f (s/tuple-of (map v/make configs))]
+    (fn [value]
+      (let [errors (f value)]
+        (when (seq (remove nil? errors))
+          errors)))))
