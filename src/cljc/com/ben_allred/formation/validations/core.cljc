@@ -9,10 +9,7 @@
                                 (map #(% value))
                                 (remove nil?)
                                 (seq))]
-      (let [f (if (map? (first validations))
-                (partial merge-with utils/deep-into)
-                (comp distinct concat))
-            result (reduce f validations)]
+      (let [result (reduce utils/deep-into validations)]
         (when (seq result)
           result)))))
 
@@ -33,6 +30,6 @@
                                             (remove nil?)
                                             (seq))]
                       (into {} results)))
-    (coll? config) (apply combine (map make config))
-    (ifn? config) config
-    :else identity))
+    (and (coll? config) (sequential? config)) (apply combine (map make config))
+    (and (ifn? config) (not (symbol? config)) (not (var? config))) config
+    :else (constantly nil)))

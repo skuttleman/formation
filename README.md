@@ -8,7 +8,7 @@ A Clojure library for data validation and transformation.
 
 In your `project.clj` add to your dependencies:
 
-> [com.ben-allred/formation "0.4.1"]
+> [com.ben-allred/formation "0.4.2"]
 
 Creating and using validators and transformers is nesting functions that transform small parts of your data into a data
 model that resembles your actual data model.
@@ -105,16 +105,16 @@ which nests validation messages in a structure that mirrors the structure passed
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (f/make #(when-not (string? %) ["should be a string"])))
+(def validator (f/make-validator #(when-not (string? %) ["should be a string"])))
 
 (validator "string")
 ;; => nil
 (validator :not-a-string)
 ;; => ["should be a string"]
 
-(def another-validator (f/make {:number #(when-not (number? %) ["should be a number"])
-                                :upper-string [#(when-not (string? %) ["should be a string"])
-                                               #(when-not (re-matches #"[A-Z]+" (str %)) ["should be uppercase"])]}))
+(def another-validator (f/make-validator {:number #(when-not (number? %) ["should be a number"])
+                                          :upper-string [#(when-not (string? %) ["should be a string"])
+                                                         #(when-not (re-matches #"[A-Z]+" (str %)) ["should be uppercase"])]}))
 
 (another-validator {:number 17 :upper-string "ASDFADSF"})
 ;; => nil
@@ -210,12 +210,12 @@ the `count` of the value is greater than the length.
 ```clojure
 (require '[com.ben-allred.formation.core :as f])
 
-(def validator (f/max-length 13 "no more than least 13"))
+(def validator (f/max-length 13 "no more than 13"))
 
 (validator [1 2 3])
 ;; => nil
 (validator "elkajsdkfeliasjdelfkasjdlkfjesiljfslajkef")
-;; => ("no more than least 13")
+;; => ("no more than 13")
 ```
 
 #### `validator-map`

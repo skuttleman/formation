@@ -21,7 +21,24 @@
 
             (is (spies/called-with? spy-1 ::some-data))
             (is (spies/called-with? spy-2 ::some-data))
-            (is (spies/called-with? spy-3 ::some-data)))))
+            (is (spies/called-with? spy-3 ::some-data))))
+
+        (let [spy-1 (spies/create (constantly [{:key-1 ["problem 1"]} nil]))
+              spy-2 (spies/create (constantly [nil {:key-2 ["problem 2"]}]))
+              spy-3 (spies/create (constantly [{:key-1 ["problem 3-1"]}
+                                               {:key-2 ["problem 3-2"]}]))
+              make (v/make [spy-1 spy-2 spy-3])]
+          (testing "combines sequences of validation maps"
+            (spies/reset! spy-1 spy-2 spy-3)
+            (is (= (make ::some-data)
+                   [{:key-1 ["problem 1" "problem 3-1"]}
+                    {:key-2 ["problem 2" "problem 3-2"]}])))
+
+          (testing "returns nil for no errors"
+            (spies/respond-with! spy-1 (constantly nil))
+            (spies/respond-with! spy-2 (constantly nil))
+            (spies/respond-with! spy-3 (constantly nil))
+            (is (nil? (make ::some-data))))))
 
       (testing "from a map"
         (let [spy-1 (spies/create (constantly ["a problem"]))
@@ -88,4 +105,12 @@
           (testing "returns the errors"
             (is (= {:key-1 ["an error" "another error"]
                     :key-2 {:sub-key {:sub-sub ["a sub error" "another sub error"]}}}
-                   result))))))))
+                   result)))))
+
+      (testing "from something not invokable"
+        (testing "never returns errors"
+          (let [random-things ["string" 37.2 \- #"regex" -3/7 nil 'symbol #'clojure.core/identity]]
+            (doseq [config random-things
+                    :let [value (rand-nth random-things)
+                          validator (v/make config)]]
+              (is (nil? (validator value))))))))))
