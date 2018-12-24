@@ -1,144 +1,125 @@
 (ns com.ben-allred.formation.core
-  (:refer-clojure :exclude [=])
-  (:require [com.ben-allred.formation.validations.core :as v]
-            [com.ben-allred.formation.validations.validators :as vs]
-            [com.ben-allred.formation.transformations.core :as t]
-            [com.ben-allred.formation.transformations.transformers :as ts]
-            [com.ben-allred.formation.shared.core :as s]))
-
-;; Transformations
-
-(defn make-transformer
-  "Makes a transforming function by passing a nested config value. Values can be maps,
-  functions, or vectors of maps and/or functions.
-
-  (make-transformer {:person [{:address [{:street [#(string/split % #\"\\s\") (map string/capitalize %) #(string/join \" \" %)]
-                                          :state  string/upper-case}
-                                         {:zip   string/trim
-                                          :state string/trim}]}
-                              #(update % :first-name string/capitalize)
-                              #(update % :last-name string/capitalize)]
-                     :flags  (comp set (transformer-coll keyword))})"
-  [config]
-  (t/make config))
-
-(defn transformer-map
-  "Transforms a map by passing it's keys and values through validators made with key-cfg
-  and val-cfg via make-transformer."
-  [key-cfg val-cfg]
-  (ts/map-of key-cfg val-cfg))
-
-(defn transformer-coll
-  "Transforms a collection of values into a collection of the same type. May lazily
-  evaluate transforming lists and seqs.
-
-  ((transfromer-coll keyword) #{\"a\" \"b\" \"c\"})
-  ;; => #{:a :b :c}"
-  [config]
-  (ts/coll-of config))
-
-(defn transformer-tuple
-  "Transforms a tuple though a series of transformers made via make-transformer. Length of
-  return value is always the length of configs."
-  [& configs]
-  (apply ts/tuple-of configs))
-
-
+  (:refer-clojure :exclude [identity])
+  (:require
+    [com.ben-allred.formation.validations :as v]
+    [com.ben-allred.formation.transformations :as t]))
 
 ;; Validations
 
-(defn make-validator
-  "Makes a validator which takes in a value and returns a seq of one or messages nested at
-  the same point in the config tree when a value does not satisfy the validator. A validator
-  function returns a sequence of one or more messages (presumably strings) when there are
-  issues or else returns nil.
+(defn validator
+  "Create a validating function from a configuration.
 
-  (make-validator {:name #(when-not (string? %) [\"name must be a string\"])})"
+  (validator {:a (pred number? \"must be a number\") :b (required \"required\")}"
   [config]
-  (v/make config))
+  (v/validator config))
 
 (defn required
-  "Takes an optional message and returns a validator which produces
-  a message for any key in the map that is nil or missing."
-  ([]
-   (required nil))
-  ([msg]
-   (vs/required msg)))
+  "Creates a validator that produces a msg when a value is nil.
+
+  (required \"this is required\")"
+  [msg]
+  (v/required msg))
 
 (defn pred
-  "Takes a predicate and an optional message and returns a validator which produces
-  a message when the value does not satisfy the the predicate. Does not validate nil."
-  ([p]
-   (pred p nil))
-  ([p msg]
-   (vs/pred p msg)))
+  "Creates a validator that produces a msg when a value does not satisfy the predicate.
+  Does not validate nil.
 
-(defn =
-  "Takes a seq of keys and produces a message when the values of the keys are not equal.
-  Does not validate nil."
-  ([keys]
-   (= keys nil))
-  ([keys msg]
-   (vs/= keys msg)))
+  (pred string? \"needs to be a string\")"
+  [p msg]
+  (v/pred p msg))
+
+(defn identity
+  "Creates a validator that produces a msg when the value does not equal the result of
+  passing the value through the identity function. Does not validate nil.
+
+  (identity sort \"must be sorted\")"
+  [f msg]
+  (v/pred #(= % (f %)) msg))
 
 (defn matches
-  "Takes a regex pattern and an optional message and returns a validator
-  which produces a message when the value does not match the pattern.
-  Does not validate nil."
-  ([re]
-   (matches re nil))
-  ([re msg]
-   (vs/matches re msg)))
+  "Creates a validator that produces a msg when the value does not match a given regular
+  expression or the value is not a string. Does not validate nil.
+
+  (matches #\"[0-9]{4,}\" \"at least 4 digits\")"
+  [re msg]
+  (v/pred (partial re-matches re) msg))
 
 (defn min-length
-  "Takes a number and an optional message and validates that the value has a count greater than
-  or equal to the length. Does not validate nil."
-  ([length]
-   (min-length length nil))
-  ([length msg]
-   (vs/min-length length msg)))
+  "Creates a validator that produces a msg when the length of the value is not at least
+  what is specified. Does not validate nil.
+
+  (min-length 10 \"must be at least 10\")"
+  [n msg]
+  (v/pred (comp #(>= % n) count) msg))
 
 (defn max-length
-  "Takes a number and an optional message and validates the value has a count less than or equal
-  to the length. Does not validate nil."
-  ([length]
-   (max-length length nil))
-  ([length msg]
-   (vs/max-length length msg)))
+  "Creates a validator that produces a msg when the length of the value is not at least
+  what is specified. Does not validate nil.
 
-(defn validator-map
-  "Takes a key-validator and a val-validator returns a validator which expects its value to be map
-  where all keys pass the key-validator and all values pass the val-validator. The key and/or val
-  error messages are concatenated together under each key with errors."
-  [key-validator val-validator]
-  (vs/map-of key-validator val-validator))
+  (max-length 10 \"must be at most 10\")"
+  [n msg]
+  (v/pred (comp #(<= % n) count) msg))
 
-(defn validator-coll
-  "Takes a validator config and returns a validator which expects its value to be a collection
-  where every value satisfies the config. Returns a seq of distinct error messages or nil."
+
+
+;; Transformations
+
+(defn transformer
+  "Creates a transforming function that transforms a value through a data config.
+
+  (transformer {:person {:email string/lower-case :attributes ^::map-of {keyword str}}})"
   [config]
-  (vs/coll-of config))
-
-(defn validator-tuple
-  "Validates a tuple though a series of validators made via make-validator. Length of
-  return value is always the length of configs."
-  [& configs]
-  (apply vs/tuple-of configs))
-
-
-
-;; Utilities
-
-(defn ifn->fn
-  "Utility wrapper for maps when you want to use them as a transforming function
-  because make-transformer treats maps as nested transformations."
-  [ifn]
-  (s/ifn->fn ifn))
+  (t/transformer config))
 
 (defn when-somep
   "Utility wrapper for transforming functions that you only want called when the
   value is not nil (i.e. not required).
 
-  (make-transformer {:something (u:when-somep string/upper-case)})"
-  [pred]
-  (s/when-somep pred))
+  (make-transformer {:something [(when-somep string/trim) (when-somep string/upper-case)]})"
+  [p]
+  (fn [value]
+    (when (some? value)
+      (p value))))
+
+
+
+;; Deprecated
+
+(defn ^:deprecated make-validator
+  "Deprecated. Use `validator` instead."
+  [config]
+  (validator config))
+
+(defn ^:deprecated validator-map
+  "Deprecated. Use ::map-of metadata instead.
+
+  (validator ^::map-of {[(required \"required\") (pred keyword? \"keyword\")] val-validator})"
+  [key-config val-config]
+  (validator ^::map-of {key-config val-config}))
+
+(defn ^:deprecated validator-coll
+  "Deprecated. Use ::coll-of metadata instead.
+
+  (validator ^::coll-of [[(required \"required\") (pred string? \"string\")]])"
+  [config]
+  (validator ^::coll-of [config]))
+
+(defn ^:deprecated validator-tuple
+  "Deprecated. Use ::tuple-of metadata instead.
+
+  (validator ^::tuple-of [(pred number? \"number\") [(required \"required\") (matches #\"[0-9]{4,}\" \"digits\")]])"
+  [& configs]
+  (validator (with-meta (vec configs) {::tuple-of true})))
+
+(defn ^:deprecated make-transformer
+  "Deprecated. Use `transformer` instead."
+  [config]
+  (transformer config))
+
+(defn ^:deprecated ifn->fn
+  "Deprecated. Use ::ifn metadata instead.
+
+  Utility wrapper for maps when you want to use them as a transforming function
+  because make-transformer treats maps as nested transformations."
+  [ifn]
+  (with-meta ifn {::ifn true}))
