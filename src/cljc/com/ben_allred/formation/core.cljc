@@ -61,17 +61,29 @@
   (v/pred (comp #(<= % n) count) msg))
 
 (defn hydrate
-  "Creates a validator that hydrates the stored value for validation."
+  "Creates a validator that hydrates the stored value for validation.
+
+  (let [validator (hydrate widget-id->widget widget-validator)]
+    (validator widget-id))"
   [hydrator config]
   (comp (validator config) hydrator))
 
 (defn whenp
-  ""
+  "Predicate the usage of a validator config spec. The predicate is called with the same
+  args as the validator.
+  (def validator (whenp < (pred (fn [lesser greater] (< (- greater lesser) 10))
+                                \"Second must be within 10 of first\")))
+  (validator 100 1)
+  ;;=> nil
+  (validator 1 5)
+  ;;=> nil
+  (validator 1 100)
+  ;;=> [\"Second must be within 10 of first\"]"
   [pred config]
   (let [v (validator config)]
-    (fn [value]
-      (when (v/affirm pred value)
-        (v value)))))
+    (fn [value & args]
+      (when (apply v/affirm pred value args)
+        (apply v value args)))))
 
 
 
