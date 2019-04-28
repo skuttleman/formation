@@ -1,4 +1,4 @@
-(defproject com.ben-allred/formation "0.5.0"
+(defproject com.ben-allred/formation "0.6.0"
   :description "A validation and conforming library for nested data structures"
   :url "https://github.com/skuttleman/formation"
   :license {:name "Eclipse Public License"
@@ -9,8 +9,7 @@
                  [org.clojure/clojurescript "1.9.946"]]
   :plugins [[lein-cljsbuild "1.1.6"]
             [com.jakemccrary/lein-test-refresh "0.22.0"]
-            [cider/cider-nrepl "0.16.0"]]
-  :hooks [leiningen.cljsbuild]
+            [cider/cider-nrepl "0.21.1"]]
 
   :profiles {:dev {:clean-targets ^{:protect false :replace true} ["resources/public/js"
                                                                    :target-path]}}

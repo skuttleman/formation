@@ -60,6 +60,19 @@
   [n msg]
   (v/pred (comp #(<= % n) count) msg))
 
+(defn hydrate
+  "Creates a validator that hydrates the stored value for validation."
+  [hydrator config]
+  (comp (validator config) hydrator))
+
+(defn whenp
+  ""
+  [pred config]
+  (let [v (validator config)]
+    (fn [value]
+      (when (v/affirm pred value)
+        (v value)))))
+
 
 
 ;; Transformations

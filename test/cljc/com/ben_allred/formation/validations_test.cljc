@@ -330,3 +330,19 @@
           [nil nil] [1 :users] ["must have users"]
           [nil {:users []}] [1 :users] ["at least one user"]
           [:k {:users [{:favorite-things {}} {:name "a name"}]}] [1 :users 1 :favorite-things] ["must have things"])))))
+
+(deftest varargs-test
+  (testing "var-args"
+    (let [validator (f/validator
+                      {:thing (f/pred #(= %1 %2) "Things must be equal")
+                       :sub   {:value     (fn [value context]
+                                            (when (and value (not= (:value context) (inc value)))
+                                              ["Sub value is wrong"]))
+                               :something (f/required "Must have something")}})]
+      (are [value context errors] (= errors (validator value context))
+        nil nil {:sub {:something ["Must have something"]}}
+        {:sub {:something :anything}} :doesn't-matter nil
+        {:thing {:value 7} :sub {:something false}} {:value 7} nil
+        {:sub {:value 6 :something :x}} {:value 7} nil
+        {:thing {:value 6}} {:value 7} {:thing ["Things must be equal"] :sub {:something ["Must have something"]}}
+        {:sub {:value 7 :something :x}} {:value 7} {:sub {:value ["Sub value is wrong"]}}))))

@@ -45,6 +45,24 @@
         {:keyword "string"} {:keyword "string"}
         {:a "a" "b" "\tb\t" "c" "   c   \n"} {:a "a" :b "b" :c "c"}))))
 
+(deftest limto-to-test
+  (testing "limit-to"
+    (testing "with records"
+      (let [transform (t/transformer ^::f/limit-to {:a string/upper-case
+                                                    :b inc})]
+        (are [value expected] (= expected (transform value))
+          {} {}
+          {:a "just-A"} {:a "JUST-A"}
+          {:a "lower" :b 0} {:a "LOWER" :b 1}
+          {:a "something" :b 123 :c ::extra} {:a "SOMETHING" :b 124})))
+
+    (testing "with tuples"
+      (let [transform (t/transformer
+                        ^::f/tuple-of ^::f/limit-to
+                        [keyword string/upper-case inc])]
+        (are [value expected] (= expected (transform value))
+          ["keyword" "UPPER" 0 :extra] [:keyword "UPPER" 1])))))
+
 (deftest transformations-test
   (testing "transformations"
     (let [transform (t/transformer
@@ -68,4 +86,14 @@
                    :attributes {:a ::anything
                                 :b {::a 1 ::b 2}
                                 :c [1 2 3]}
-                   :preferences #{:a :b :c}}]))))
+                   :preferences #{:a :b :c}}]
+        ["value" {}]
+        [:value {}]))))
+
+(deftest varargs-test
+  (testing "var-args"
+    (let [transform (t/transformer ^::f/tuple-of [+ -])]
+      (are [value args expected] (= expected (apply transform value args))
+        [0 0] nil [0 0]
+        [1 7] [4] [5 3]
+        [-4 4] [2 2] [0 0]))))

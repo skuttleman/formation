@@ -22,18 +22,21 @@
   (when (some some? coll)
     (seq coll)))
 
+(defn affirm [p value & args]
+  (try (apply p value args)
+       (catch #?(:clj Throwable :default :default) _
+         false)))
+
 (defn ^:private ->fn [p msg]
-  (fn [model]
-    (try (when-not (p model)
-           [msg])
-         (catch #?(:clj Throwable :default :default) _
-           [msg]))))
+  (fn [model & args]
+    (when-not (apply affirm p model args)
+      [msg])))
 
 (defn ^:private whenp [p]
-  (fn [model]
+  (fn [model & args]
     (if (nil? model)
       true
-      (p model))))
+      (apply p model args))))
 
 (defmulti ^:private validate* #'shared/dispatch)
 
@@ -65,87 +68,88 @@
       :else
       result-b)))
 
-(defn ^:private validate [config model]
+(defn ^:private validate [config model args]
   (let [m (meta* config)]
     (with-meta*
       (if (coll? config) (empty config) ())
-      (validate* config model)
-      (when m (validate* (vary-meta m assoc :com.ben-allred.formation.core/vicinity-of true) model)))))
+      (validate* config model args)
+      (when m (validate* (vary-meta m assoc :com.ben-allred.formation.core/vicinity-of true) model args)))))
 
 (defmethod ^:private validate* :vicinity-tuple
-  [config model]
+  [config model args]
   (some->> config
-           (map (fn [cfg] (validate cfg model)))
+           (map (fn [cfg] (validate cfg model args)))
            (filter some?)
            (seq*)
            (vec)))
 
 (defmethod ^:private validate* :vicinity-record
-  [config model]
+  [config model args]
   (some->> config
-           (map (fn [[k v]] [k (validate v model)]))
+           (map (fn [[k v]] [k (validate v model args)]))
            (filter (comp some? second))
            (seq)
            (into {})))
 
 (defmethod ^:private validate* :vicinity-combine
-  [[config & configs] model]
-  (transduce (map #(validate (vary-meta % assoc :com.ben-allred.formation.core/vicinity-of true) model))
+  [[config & configs] model args]
+  (transduce (map #(validate (vary-meta % assoc :com.ben-allred.formation.core/vicinity-of true) model args))
              (completing combine*)
-             (validate (vary-meta config assoc :com.ben-allred.formation.core/vicinity-of true) model)
+             (validate (vary-meta config assoc :com.ben-allred.formation.core/vicinity-of true) model args)
              configs))
 
 (defmethod ^:private validate* :coll
-  [[config] model]
+  [[config] model args]
   (some->> model
-           (map (partial validate config))
+           (map #(validate config % args))
            (seq*)
            (vec)))
 
 (defmethod ^:private validate* :map
-  [config model]
+  [config model args]
   (let [[key-config val-config] (first config)]
     (some->> model
-             (map (fn [[k v]] [k (combine* (validate key-config k) (validate val-config v))]))
+             (map (fn [[k v]] [k (combine* (validate key-config k args) (validate val-config v args))]))
              (filter (comp some? second))
              (seq)
              (into {}))))
 
 (defmethod ^:private validate* :tuple
-  [config model]
+  [config model args]
   (some->> config
-           (map-indexed (fn [i cfg] (validate cfg (nth model i nil))))
+           (map-indexed (fn [i cfg] (validate cfg (nth model i nil) args)))
            (seq*)
            (vec)))
 
 (defmethod ^:private validate* :record
-  [config model]
+  [config model args]
   (some->> config
-           (map (fn [[k v]] [k (validate v (get model k))]))
+           (map (fn [[k v]] [k (validate v (get model k) args)]))
            (filter (comp some? second))
            (seq)
            (into {})))
 
 (defmethod ^:private validate* :combine
-  [[config & configs] model]
-  (transduce (map #(validate % model))
+  [[config & configs] model args]
+  (transduce (map #(validate % model args))
              (completing combine*)
-             (validate config model)
+             (validate config model args)
              configs))
 
 (defmethod ^:private validate* :fn
-  [config model]
-  (config model))
+  [config model args]
+  (apply config model args))
 
 (defmethod ^:private validate* :default
   [_ _]
   nil)
 
 (defn validator [config]
-  (partial validate config))
+  (fn [model & args]
+    (validate config model args)))
 
 (defn required [msg]
-  (->fn some? msg))
+  (->fn (comp some? first list) msg))
 
 (defn pred [p msg]
   (->fn (whenp p) msg))

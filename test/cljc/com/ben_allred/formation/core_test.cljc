@@ -94,3 +94,30 @@
 
       (testing "produces the message the value is not countable"
         (is (= ["at most 10"] (validator ::value)))))))
+
+(deftest hydrate-test
+  (testing "hydrate"
+    (let [validator (f/hydrate {123 {:name "Sally" :role :mod}
+                                456 {:name "Joe" :email "good@email.test" :role :rocker}
+                                789 {:name "Richard" :email "" :role :mocker}}
+                               {:role  [(f/pred #{:mod :rocker} "Mod or rocker")
+                                        (f/required "Must have a role")]
+                                :email [(f/matches #"[a-z]+@[a-z]+\.[a-z]+" "Invalid email")
+                                        (f/required "Must have an email")]})]
+      (are [person-id errors] (= errors (validator person-id))
+        123 {:email ["Must have an email"]}
+        456 nil
+        789 {:email ["Invalid email"]
+             :role  ["Mod or rocker"]}
+        000 {:email ["Must have an email"]
+             :role  ["Must have a role"]}))))
+
+(deftest whenp-test
+  (testing "whenp"
+    (let [validator (f/whenp pos? (f/pred integer? "Must be an integer"))]
+      (are [value errors] (= errors (validator value))
+        0 nil
+        nil nil
+        1 nil
+        1.1 ["Must be an integer"]
+        -1.1 nil))))

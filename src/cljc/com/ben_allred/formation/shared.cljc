@@ -1,6 +1,6 @@
 (ns com.ben-allred.formation.shared)
 
-(defn dispatch [config _]
+(defn dispatch [config & _]
   (let [{:keys [com.ben-allred.formation.core/coll-of
                 com.ben-allred.formation.core/ifn
                 com.ben-allred.formation.core/map-of
