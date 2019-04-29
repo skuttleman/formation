@@ -141,7 +141,7 @@
   (apply config model args))
 
 (defmethod ^:private validate* :default
-  [_ _]
+  [_ _ _]
   nil)
 
 (defn validator [config]
